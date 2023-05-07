@@ -1,89 +1,133 @@
-# Welcome to
-# __________         __    __  .__                               __
-# \______   \_____ _/  |__/  |_|  |   ____   ______ ____ _____  |  | __ ____
-#  |    |  _/\__  \\   __\   __\  | _/ __ \ /  ___//    \\__  \ |  |/ // __ \
-#  |    |   \ / __ \|  |  |  | |  |_\  ___/ \___ \|   |  \/ __ \|    <\  ___/
-#  |________/(______/__|  |__| |____/\_____>______>___|__(______/__|__\\_____>
-#
-# This file can be a nice home for your Battlesnake logic and helper functions.
-#
-# To get you started we've included code to prevent your Battlesnake from moving backwards.
-# For more info see docs.battlesnake.com
-
 import random
 import typing
 
+matching_moves = {
+    "u":"up",
+    "d":"down",
+    "l":"left",
+    "r":"right",
+}
 
-# info is called when you create your Battlesnake on play.battlesnake.com
-# and controls your Battlesnake's appearance
-# TIP: If you open your Battlesnake URL in a browser you should see this data
+
 def info() -> typing.Dict:
     print("INFO")
 
     return {
         "apiversion": "1",
-        "author": "",  # TODO: Your Battlesnake Username
-        "color": "#888888",  # TODO: Choose color
-        "head": "default",  # TODO: Choose head
-        "tail": "default",  # TODO: Choose tail
+        "author": "Mankifg",  
+        "color": "#FF0000", 
+        "head": "beluga",
+        "tail": "default",  
     }
 
 
-# start is called when your Battlesnake begins a game
 def start(game_state: typing.Dict):
     print("GAME START")
 
-
-# end is called when your Battlesnake finishes a game
 def end(game_state: typing.Dict):
     print("GAME OVER\n")
 
+def new_x_y(direction,x,y):
+    if direction == "u":
+        return x,y+1
+    elif direction == "d":
+        return x,y-1
+    elif direction == "l":
+        return x-1,y
+    elif direction == "r":
+        return x,y+1
+    else:
+        print("Errorrrr")
+        return x,y
 
-# move is called on every turn and returns your next move
-# Valid moves are "up", "down", "left", or "right"
-# See https://docs.battlesnake.com/api/example-move for available data
-def move(game_state: typing.Dict) -> typing.Dict:
+def remove_ele(l, ele):
+    return list(filter(lambda x: x != ele, l))
 
-    is_move_safe = {"up": True, "down": True, "left": True, "right": True}
+def avoid_wall(moves,px,py,bx,by):
+    for m in moves:
+        nx,ny = new_x_y(m,px,py)
+        if (nx == bx or nx == -1) or (ny == by or ny == -1):
+            moves = remove_ele(moves,m)
 
-    # We've included code to prevent your Battlesnake from moving backwards
+    return moves
+            
+
+def dont_move_self(moves,game_state):
     my_head = game_state["you"]["body"][0]  # Coordinates of your head
     my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
 
     if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
-        is_move_safe["left"] = False
-
+        moves = remove_ele(moves,"l")
+        
     elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
-        is_move_safe["right"] = False
-
+        moves = remove_ele(moves,"r")
+        
     elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
-        is_move_safe["down"] = False
+        moves = remove_ele(moves,"d")
 
     elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
-        is_move_safe["up"] = False
+        moves = remove_ele(moves,"u")
 
-    # TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
-    # board_width = game_state['board']['width']
-    # board_height = game_state['board']['height']
 
-    # TODO: Step 2 - Prevent your Battlesnake from colliding with itself
-    # my_body = game_state['you']['body']
+    return moves
 
-    # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    # opponents = game_state['board']['snakes']
+def bad_positions(gs):
+    pos = []
 
-    # Are there any safe moves left?
-    safe_moves = []
-    for move, isSafe in is_move_safe.items():
-        if isSafe:
-            safe_moves.append(move)
+    you_body = gs["you"]["body"]
 
-    if len(safe_moves) == 0:
-        print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
-        return {"move": "down"}
+    for body_peace in you_body:
+        x,y = body_peace["x"], body_peace["y"]
+        pos.append((x,y))
+    other_snakes = gs["board"]["snakes"]
 
-    # Choose a random move from the safe ones
-    next_move = random.choice(safe_moves)
+    for x_snake in other_snakes:
+        x_snake_body = x_snake["body"]
+        for body_peace in x_snake_body:
+            x,y = body_peace["x"],body_peace["y"]
+            pos.append((x,y))
+
+    print(pos)
+    return pos
+
+def avoid_bad_pos(gs,possible_moves,px,py):
+    bad_pos = bad_positions(gs)
+    for m in possible_moves:
+        nx,ny = new_x_y(m,px,py)
+        if (nx,ny) in bad_pos:
+            possible_moves.remove(m)
+            
+    return possible_moves
+
+
+
+def move(game_state: typing.Dict) -> typing.Dict:
+
+    possible_moves = ["u","d","l","r"]
+
+    possible_moves = dont_move_self(possible_moves,game_state)
+
+    head = game_state["you"]["body"][0]
+    px = head["x"]
+    py = head["y"]
+
+    
+    board_width = game_state['board']['width']
+    board_height = game_state['board']['height']  
+    
+    possible_moves = avoid_wall(possible_moves,px,py,board_width,board_height)
+    possible_moves = avoid_bad_pos(game_state,possible_moves,px,py)
+
+
+
+    print(len(possible_moves))
+    
+    if len(possible_moves) == 0:
+        print(f"MOVE {game_state['turn']}: No safe moves detected! Moving up")
+        return {"move": "up"}
+
+    next_move = random.choice(possible_moves)
+    next_move = matching_moves[next_move]
 
     # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
     # food = game_state['board']['food']
@@ -95,5 +139,5 @@ def move(game_state: typing.Dict) -> typing.Dict:
 # Start server when `python main.py` is run
 if __name__ == "__main__":
     from server import run_server
-
+  
     run_server({"info": info, "start": start, "move": move, "end": end})
