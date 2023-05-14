@@ -35,19 +35,17 @@ def new_x_y(direction,x,y):
     elif direction == "l":
         return x-1,y
     elif direction == "r":
-        return x,y+1
+        return x+1,y
     else:
         print("Errorrrr")
         return x,y
 
-def remove_ele(l, ele):
-    return list(filter(lambda x: x != ele, l))
 
 def avoid_wall(moves,px,py,bx,by):
     for m in moves:
         nx,ny = new_x_y(m,px,py)
         if (nx == bx or nx == -1) or (ny == by or ny == -1):
-            moves = remove_ele(moves,m)
+            moves = moves.remove(m)
 
     return moves
             
@@ -57,17 +55,17 @@ def dont_move_self(moves,game_state):
     my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
 
     if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
-        moves = remove_ele(moves,"l")
-        
+        moves = moves.remove("l")
+
     elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
-        moves = remove_ele(moves,"r")
+        moves = moves.remove("r")
         
     elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
-        moves = remove_ele(moves,"d")
+        moves = moves.remove("d")
 
     elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
-        moves = remove_ele(moves,"u")
-
+        moves = moves.remove("up")
+        
 
     return moves
 
